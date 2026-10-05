@@ -902,6 +902,9 @@ html.foot-in-view .fab{opacity:0;transform:translateY(12px);pointer-events:none}
 .paper{margin-bottom:44px}
 @media (max-width:700px){.paper{margin-bottom:28px}}
 .page>.proj:last-child,.page>.svc:last-child{margin-bottom:0}
+#about-summary,#about-skills,#about-education,#about-tracks{scroll-margin-top:76px}
+.matrix tr.flash th,.matrix tr.flash td{animation:rowflash 1.6s ease}
+@keyframes rowflash{0%,35%{background:var(--accent-soft)}100%{background:transparent}}
 </style>
 </head>
 <body>
@@ -1070,7 +1073,7 @@ const SITE = {
         "A single integration pattern for adding new chains",
         "Transparent, auditable quote and settlement trails"
       ],
-      note: { label: "Current work", text: "Building this in production at ConnectOS (Banxa)." }
+      note: { label: "Current work", text: "At ConnectOS (Banxa): adding more **DEX** and **CEX** integrations, and optimizing and refactoring the legacy code behind them." }
     },
     {
       kind: "Platform Engineering",
@@ -1292,7 +1295,7 @@ const SITE = {
   education: [
     { degree: "Bachelor of Science",                // EDIT: e.g. "B.S. Information Technology"
       school: "Lyceum of the Philippines University",
-      year: "",                                     // EDIT: e.g. "Class of 2015"
+      year: "2011 – 2015",
       note: "" }
   ]
 };
@@ -1498,13 +1501,13 @@ const pages = {
       <h2 class="title">About ${esc(SITE.name.split(' ')[0])}</h2>
       <p class="lede">${esc(SITE.headline)} with ${years}+ years building web platforms, leading teams, and shipping crypto payment infrastructure.</p>
       ${SITE.availability.length ? `<div class="card"><dl class="facts">${SITE.availability.map(([k,v]) => `<dt>${esc(k)}</dt><dd>${md(v)}</dd>`).join('')}</dl></div>` : ''}
-      <h3 class="sec">${ic('user')}Summary</h3>
+      <h3 class="sec" id="about-summary">${ic('user')}Summary</h3>
       <div class="card">${SITE.summary.map(p => `<p class="p-body">${md(p)}</p>`).join('')}</div>
-      <h3 class="sec">${ic('code')}Core Competencies</h3>
+      <h3 class="sec" id="about-skills">${ic('code')}Core Competencies</h3>
       <div class="card matrix-wrap"><table class="matrix">${SITE.skills.map(([g,v]) => `<tr><th>${esc(g)}</th><td>${esc(v)}</td></tr>`).join('')}</table></div>
-      <h3 class="sec">${ic('cap')}Education</h3>
+      <h3 class="sec" id="about-education">${ic('cap')}Education</h3>
       ${SITE.education.map(e => `<div class="card edu"><div><h4>${esc(e.degree)}</h4><div class="school">${esc(e.school)}</div>${e.note?`<p class="sm-muted">${esc(e.note)}</p>`:''}</div>${e.year?`<span class="chipyear">${esc(e.year)}</span>`:''}</div>`).join('')}
-      <h3 class="sec">${ic('users')}How We Can Work Together</h3>
+      <h3 class="sec" id="about-tracks">${ic('users')}How We Can Work Together</h3>
       ${tracks()}
       <div class="card band"><div><h4>Looking to connect or review my full credentials?</h4><p>Reach out directly, or open the printable resume.</p></div>
         <div class="btns"><a class="btn pri" href="#/contact">${ic('chat')}Get in Touch</a><a class="btn" href="#/resume">${ic('file')}View Resume</a></div></div>
@@ -1674,6 +1677,13 @@ function palItems(){
     run:() => { filter = 'All'; go('showcase', scrollTo({ q:'.proj', i:n }))(); } }));
   SITE.services.forEach((s, n) => items.push({ g:'Services', label:s.title, icon:'layers', hint:s.kind, keys:(s.deliver||[]).join(' '),
     run:go('services', scrollTo({ q:'.svc', i:n })) }));
+  const toId = id => () => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior:'smooth', block:'start' }); };
+  const toRow = i => () => { const el = document.querySelectorAll('.matrix tr')[i]; if (el){ el.scrollIntoView({ behavior:'smooth', block:'center' }); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } };
+  items.push({ g:'About', label:'Summary', icon:'user', hint:'about', keys:SITE.summary.join(' ')+' profile bio', run:go('about', toId('about-summary')) });
+  items.push({ g:'About', label:'Core Competencies', icon:'code', hint:'skills', keys:'skills tech stack '+SITE.skills.map(s=>s[0]).join(' '), run:go('about', toId('about-skills')) });
+  items.push({ g:'About', label:'Education', icon:'cap', hint:(SITE.education[0]||{}).school||'', keys:SITE.education.map(e=>e.degree+' '+e.school+' '+(e.year||'')).join(' ')+' degree school college university', run:go('about', toId('about-education')) });
+  items.push({ g:'About', label:'How We Can Work Together', icon:'users', hint:SITE.tracks.map(t=>t.title).join(' · '), keys:SITE.tracks.map(t=>t.title+' '+t.text).join(' ')+' hire engagement', run:go('about', toId('about-tracks')) });
+  SITE.skills.forEach(([g, v], n) => items.push({ g:'Skills', label:g, icon:'code', hint:'skill', keys:v, run:go('about', toRow(n)), searchOnly:true }));
   SITE.jobs.forEach((j, n) => items.push({ g:'Experience', label:`${j.title} · ${j.company}`, icon:'brief', hint:`${fmt(j.start).split(' ')[1]}–${j.end ? fmt(j.end).split(' ')[1] : 'now'}`,
     keys:(j.projects||[]).map(p => p.name).join(' ')+' '+(j.stack||[]).join(' '), run:go('history', scrollTo({ q:'.job', i:n })) }));
   items.push({ g:'Links', label:'Email ' + SITE.email, icon:'mail', hint:'mail', keys:'contact email', run:() => { location.href = 'mailto:' + SITE.email; } });
@@ -1689,14 +1699,17 @@ function palRender(){
   const score = it => { const l = it.label.toLowerCase(); let s = 0;
     for (const w of words){ if (l.startsWith(w)) s += 30; else if (l.includes(w)) s += 20; else if ((it.hint+' '+it.g).toLowerCase().includes(w)) s += 8; else if ((it.keys||'').toLowerCase().includes(w)) s += 3; else return -1; }
     return s; };
-  const order = ['Pages','Projects','Services','Experience','Links','Actions'];
+  const order = ['Pages','Projects','Services','Experience','About','Skills','Links','Actions'];
   PAL.view = PAL.items.map(it => ({ it, s: words.length ? score(it) : 0 })).filter(x => x.s >= 0);
   if (words.length){
     const best = {}; PAL.view.forEach(x => { best[x.it.g] = Math.max(best[x.it.g] || 0, x.s); });
     PAL.view.sort((a,b) => (best[b.it.g] - best[a.it.g]) || (order.indexOf(a.it.g) - order.indexOf(b.it.g)) || (b.s - a.s));
   }
   PAL.view = PAL.view.map(x => x.it);
-  if (!q) PAL.view = PAL.view.filter(it => it.g === 'Pages' || it.g === 'Projects' || it.g === 'Links');
+  if (!q){
+    const order = ['Pages','Projects','Services','Experience','About','Links'];
+    PAL.view = PAL.view.filter(it => order.includes(it.g) && !it.searchOnly).sort((a,b) => order.indexOf(a.g) - order.indexOf(b.g));
+  }
   PAL.active = Math.min(PAL.active, Math.max(0, PAL.view.length - 1));
   let html = '', grp = '';
   PAL.view.forEach((it, i) => {

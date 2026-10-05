@@ -130,7 +130,7 @@ A chat platform for web and mobile: a **Laravel** backend for accounts and messa
 - A single integration pattern for adding new chains
 - Transparent, auditable quote and settlement trails
 
-*Current work:* Building this in production at ConnectOS (Banxa).
+*Current work:* At ConnectOS (Banxa): adding more **DEX** and **CEX** integrations, and optimizing and refactoring the legacy code behind them.
 
 ### 02 · Laravel & Node.js Backends and APIs
 
@@ -404,7 +404,7 @@ Part-time architecture and code-review support.
 
 ## Education
 
-- **Bachelor of Science** — Lyceum of the Philippines University
+- **Bachelor of Science** — Lyceum of the Philippines University (2011 – 2015)
 
 ---
 
