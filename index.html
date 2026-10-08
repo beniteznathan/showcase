@@ -905,6 +905,27 @@ html.foot-in-view .fab{opacity:0;transform:translateY(12px);pointer-events:none}
 #about-summary,#about-skills,#about-education,#about-tracks{scroll-margin-top:76px}
 .matrix tr.flash th,.matrix tr.flash td{animation:rowflash 1.6s ease}
 @keyframes rowflash{0%,35%{background:var(--accent-soft)}100%{background:transparent}}
+.page > .lede + .ccards{margin-top:8px}
+/* contact cards: give the email card room so the address stays on one line */
+@media (min-width:901px){.ccards{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr)}}
+.ccards .card:first-child .big{font-size:clamp(15px,1.35vw,17px);overflow-wrap:anywhere;word-break:normal}
+.plist a{white-space:nowrap}
+/* ================= contact form states ================= */
+.hp-field{position:absolute!important;left:-9999px!important;width:1px;height:1px;opacity:0}
+.form-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.form-err{font-size:13.5px;color:#c0392b;font-weight:500;line-height:1.45}
+.form-err a{color:inherit;text-decoration:underline}
+:root[data-theme="dark"] .form-err{color:#ff8a7a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .form-err{color:#ff8a7a}}
+.form input.invalid,.form textarea.invalid{border-color:#c0392b;box-shadow:0 0 0 3px rgba(192,57,43,.14)}
+.btn.loading{opacity:.75;cursor:progress}
+.form-done{display:flex;gap:16px;align-items:flex-start}
+.form-done[hidden],#cform[hidden]{display:none!important}
+.fd-ic{flex:none;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--green-soft);color:var(--green)}
+.fd-ic svg{width:20px;height:20px}
+.form-done h4{margin:2px 0 6px;font:600 20px var(--serif)}
+.form-done p{margin:0 0 16px;color:var(--text-2)}
+@media (max-width:520px){.form-actions .btn{width:100%}}
 </style>
 </head>
 <body>
@@ -963,6 +984,10 @@ const SITE = {
   },
   careerStart: "2015-06",                          // used to calculate "years of experience"
   available: true,
+  contactForm: true,                              // false hides the contact form
+  // Contact form delivery (FormSubmit, free). After the first message, FormSubmit emails you a
+  // confirmation link and a random alias — you can swap the email below for that alias to hide it.
+  formEndpoint: "https://formsubmit.co/ajax/beniteznathan.dev@gmail.com",
   availability: [                                  // shown on About + Resume; delete lines you don't want public
     ["Target role", "Senior Software Engineer · Full-Stack / Backend Lead"],
     ["Availability", "Open to remote full-time roles and project work"],   // EDIT
@@ -1466,7 +1491,7 @@ const pages = {
         <span class="pill">Let's talk</span>
         <h4>Have a product, payment flow or team that needs a senior engineer?</h4>
         <p>Whether it's a full-time role, a scoped project or a second opinion on your architecture, I'm happy to look at your requirements.</p>
-        <div class="btns"><a class="btn pri" href="#/contact">${ic('send')}Send a Message</a><a class="btn" href="mailto:${esc(SITE.email)}">${ic('mail')}Email Me</a></div>
+        <div class="btns"><a class="btn pri" href="#/contact">${ic('send')}Get in Touch</a><a class="btn" href="mailto:${esc(SITE.email)}">${ic('mail')}Email Me</a></div>
       </div>
     </div>`;
   },
@@ -1519,8 +1544,9 @@ const pages = {
     return `<div class="page">
       <span class="pill">Get in touch</span>
       <h2 class="title">Contact Me</h2>
-      <p class="lede">Hiring, a project, or a quick technical question? Send a message and I'll reply by email.</p>
-      <form class="card form" id="cform">
+      <p class="lede">${SITE.contactForm ? "Hiring, a project, or a quick technical question? Send a message and I'll reply by email." : "Hiring, a project, or a quick technical question? Reach me directly by email or LinkedIn."}</p>
+      ${SITE.contactForm ? `<form class="card form" id="cform" novalidate>
+        <input type="text" name="_honey" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
         <div class="row">
           <label>Your name<input name="name" required placeholder="Jane Doe"></label>
           <label>Your email<input name="email" type="email" required placeholder="jane@company.com"></label>
@@ -1530,16 +1556,21 @@ const pages = {
           <label>Topic<select name="topic"><option>Full-time role</option><option>Project work</option><option>Advisory</option><option>Something else</option></select></label>
         </div>
         <label>Message<textarea name="msg" required placeholder="Tell me about the role or project…"></textarea></label>
-        <div><button class="btn pri" type="submit">${ic('send')}Send Message</button></div>
-        <p class="privacy">${ic('lock')}This opens your email app with the message ready to send. Nothing is stored on this site.</p>
+        <div class="form-actions"><button class="btn pri" type="button" id="sendBtn">${ic('send')}<span>Send Message</span></button><span class="form-err" id="formErr" role="alert" aria-live="polite"></span></div>
+        <p class="privacy">${ic('lock')}Your message goes straight to my inbox. Nothing is stored on this site.</p>
       </form>
+      <div class="card form-done" id="formDone" hidden>
+        <div class="fd-ic">${ic('check')}</div>
+        <div><h4>Message sent</h4><p>Thanks, <b id="fdName"></b>. I'll reply to <b id="fdEmail"></b>, usually within a day or two.</p>
+        <button class="btn" type="button" id="fdAgain">${ic('send')}Send another message</button></div>
+      </div>` : ''}
       <div class="ccards">
         <div class="card"><div class="ico">${ic('mail')}</div><div class="label">Direct email</div><div class="big">${esc(SITE.email)}</div>
           <div class="row2"><a class="btn pri" href="mailto:${esc(SITE.email)}">${ic('send')}Compose</a><button class="btn" id="copyMail">${ic('copy')}Copy</button></div></div>
         <div class="card"><div class="ico v">${ic('linkedin')}</div><div class="label">Professional profiles</div>
           <div class="plist">
-            ${L.linkedin ? `<div>LinkedIn: <a href="${esc(L.linkedin)}" target="_blank" rel="noopener">${esc(host(L.linkedin)+new URL(L.linkedin).pathname)} ↗</a></div>` : ''}
-            ${L.github ? `<div>GitHub: <a href="${esc(L.github)}" target="_blank" rel="noopener">${esc(host(L.github)+new URL(L.github).pathname)} ↗</a></div>` : ''}
+            ${L.linkedin ? `<div>LinkedIn: <a href="${esc(L.linkedin)}" target="_blank" rel="noopener">in/${esc(new URL(L.linkedin).pathname.split('/').filter(Boolean).pop())} ↗</a></div>` : ''}
+            ${L.github ? `<div>GitHub: <a href="${esc(L.github)}" target="_blank" rel="noopener">@${esc(new URL(L.github).pathname.split('/').filter(Boolean).pop())} ↗</a></div>` : ''}
             ${L.website ? `<div>Website: <a href="${esc(L.website)}" target="_blank" rel="noopener">${esc(host(L.website))} ↗</a></div>` : ''}
           </div></div>
         <div class="card"><div class="ico a">${ic('globe')}</div><div class="label">Location & work model</div><div class="big">${esc(SITE.location)}</div>
@@ -1623,14 +1654,58 @@ document.addEventListener('click', e => {
     navigator.clipboard?.writeText(SITE.email).then(() => toast('Email copied'), () => toast(SITE.email));
   }
 });
-document.addEventListener('submit', e => {
-  if (e.target.id !== 'cform') return;
-  e.preventDefault();
-  const d = Object.fromEntries(new FormData(e.target));
-  const subject = `[${d.topic}] Message from ${d.name}${d.company ? ' (' + d.company + ')' : ''}`;
-  const body = `${d.msg}\n\n—\n${d.name}\n${d.email}${d.company ? '\n' + d.company : ''}`;
-  location.href = `mailto:${SITE.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  toast('Opening your email app…');
+/* ================= contact form (FormSubmit) =================
+   Handled by the button itself, so it also works where form submission is blocked (embedded previews). */
+async function sendContact(){
+  const f = document.getElementById('cform'); if (!f) return;
+  const err = document.getElementById('formErr'), btn = document.getElementById('sendBtn');
+  let first = null;
+  [...f.querySelectorAll('input[required],textarea[required]')].forEach(el => {
+    const v = el.value.trim();
+    const bad = !v || (el.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
+    el.classList.toggle('invalid', bad); bad ? el.setAttribute('aria-invalid','true') : el.removeAttribute('aria-invalid');
+    if (bad && !first) first = el;
+  });
+  if (first){
+    err.textContent = first.type === 'email' && first.value.trim() ? 'Please enter a valid email address.' : 'Please fill in your name, email and message.';
+    first.focus(); return;
+  }
+  const d = Object.fromEntries(new FormData(f));
+  const done = () => {
+    document.getElementById('fdName').textContent = d.name.trim().split(' ')[0];
+    document.getElementById('fdEmail').textContent = d.email.trim();
+    f.hidden = true; document.getElementById('formDone').hidden = false; f.reset();
+  };
+  if (d._honey){ done(); return; }                       // bot filled the hidden trap: pretend success, send nothing
+  err.textContent = ''; btn.disabled = true; btn.classList.add('loading'); btn.querySelector('span').textContent = 'Sending…';
+  try {
+    const res = await fetch(SITE.formEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        name: d.name.trim(), email: d.email.trim(), company: d.company.trim() || '—', topic: d.topic, message: d.msg.trim(),
+        _subject: `[Portfolio] ${d.topic} — ${d.name.trim()}${d.company.trim() ? ' (' + d.company.trim() + ')' : ''}`,
+        _replyto: d.email.trim(), _template: 'table', _captcha: 'false', _honey: ''
+      })
+    });
+    let j = {}; try { j = await res.json(); } catch(_) {}
+    const ok = res.ok && String(j.success) === 'true';
+    if (ok) done();
+    else err.innerHTML = `${esc(j.message || "Sorry — the message couldn't be sent.")} You can also email me at <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a>.`;
+  } catch(_) {
+    err.innerHTML = `Couldn't reach the mail service. Please email me directly at <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a>.`;
+  } finally {
+    btn.disabled = false; btn.classList.remove('loading'); btn.querySelector('span').textContent = 'Send Message';
+  }
+}
+document.addEventListener('click', e => {
+  if (e.target.closest('#sendBtn')){ e.preventDefault(); sendContact(); }
+  if (e.target.closest('#fdAgain')){ document.getElementById('formDone').hidden = true; const f = document.getElementById('cform'); f.hidden = false; f.querySelector('input[name=name]').focus(); }
+});
+document.addEventListener('submit', e => { if (e.target.id === 'cform'){ e.preventDefault(); sendContact(); } });
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.closest && el.closest('#cform') && el.classList.contains('invalid') && el.value.trim()){ el.classList.remove('invalid'); el.removeAttribute('aria-invalid'); }
 });
 /* Change pages safely: some embedded previews block address changes, so never let that break navigation */
 function goPage(k){

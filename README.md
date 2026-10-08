@@ -426,4 +426,4 @@ This is a single-page static site (`index.html`) served by GitHub Pages at https
 - **Resume:** open the Resume page and use *Print / Save as PDF* for a printable version.
 - Light and dark themes follow the visitor's system setting and can be toggled from the top bar.
 
-<sub>Generated from the site content on 2026-10-05.</sub>
+<sub>Generated from the site content on 2026-10-08.</sub>
